@@ -13,49 +13,39 @@ jsTag.directive('jsTag', ['$templateCache', function($templateCache) {
   }
 }]);
 
-// TODO: Replace this custom directive by a supported angular-js directive for blur
-jsTag.directive('ngBlur', ['$parse', function($parse) {
-    return {
-        restrict: 'A',
-        link: function(scope, elem, attrs) {
-          // this next line will convert the string
-          // function name into an actual function
-          var functionToCall = $parse(attrs.ngBlur);
-          elem.bind('blur', function(event) {
-          
-            // on the blur event, call my function
-            scope.$apply(function() {
-              functionToCall(scope, {$event:event});
-            });
-          });
-        }
-    };
-}]);
-
-
-// Notice that focus me also sets the value to false when blur is called
-// TODO: Replace this custom directive by a supported angular-js directive for focus
-// http://stackoverflow.com/questions/14833326/how-to-set-focus-in-angularjs
-jsTag.directive('focusMe', ['$parse', '$timeout', function($parse, $timeout) {
+jsTag.directive('onlyDigits', function () {
   return {
     restrict: 'A',
-    link: function(scope, element, attrs) {
-      var model = $parse(attrs.focusMe);
-      scope.$watch(model, function(value) {
-        if (value === true) {
-          $timeout(function() {
-            element[0].focus(); 
-          });
-        }
-      });
-      
-      // to address @blesh's comment, set attribute value to 'false'
-      // on blur event:
-      element.bind('blur', function() {
-        scope.$apply(model.assign(scope, false));
+    require: '?ngModel',
+    link: function (scope, element, attrs, ngModel) {
+      if (!ngModel || attrs.onlyDigits !== 'true') return;
+      ngModel.$parsers.unshift(function (inputValue) {
+        var digits = inputValue.split('').filter(function (s) { return (!isNaN(s) && s != ' '); }).join('');
+        ngModel.$viewValue = digits;
+        ngModel.$render();
+        return digits;
       });
     }
   };
+});
+
+jsTag.directive("limitTo", [function() {
+  return {
+    restrict: "A",
+    require: '?ngModel',
+    link: function(scope, elem, attrs, ngModel) {
+      var limit = parseInt(attrs.limitTo);
+      if (!ngModel) return;
+      ngModel.$parsers.unshift(function (inputValue) {
+        if (inputValue && inputValue.length > limit) {
+          inputValue = inputValue.slice(0, 5);
+        }
+        ngModel.$viewValue = inputValue;
+        ngModel.$render();
+        return inputValue;
+      });
+    }
+  }
 }]);
 
 // focusOnce is used to focus an element once when first appearing

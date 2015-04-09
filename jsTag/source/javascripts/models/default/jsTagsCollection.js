@@ -25,6 +25,7 @@ jsTag.factory('JSTagsCollection', ['JSTag', '$filter', function(JSTag, $filter) 
   
   // Adds a tag with received value
   JSTagsCollection.prototype.addTag = function(value) {
+    if (!value.length) { return; }
     var tagIndex = this.tagsCounter;
     this.tagsCounter++;
   

@@ -32,8 +32,10 @@ jsTag.factory('InputService', ['$filter', function($filter) {
 
       inputService.breakCodeHit(tagsCollection, this.options);
 
-      // Trigger breakcodeHit event allowing extensions (used in twitter's typeahead directive)
-      $element.trigger('jsTag:breakcodeHit');
+      if (typeof $element.trigger === 'function') {
+        // Trigger breakcodeHit event allowing extensions (used in twitter's typeahead directive)
+        $element.trigger('jsTag:breakcodeHit');
+      }
 
       // Do not trigger form submit if value is not empty.
       if (!valueIsEmpty) {
@@ -55,7 +57,14 @@ jsTag.factory('InputService', ['$filter', function($filter) {
           break;
       }
     }
-  }
+  };
+  InputService.prototype.onBlurEdit = function(tagsCollection) {
+    this.breakCodeHitOnEdit(tagsCollection);
+  };
+
+  InputService.prototype.onBlur = function(tagsCollection, options) {
+    this.breakCodeHit(tagsCollection, options);
+  };
 
   // Handles an input of an edited tag keydown
   InputService.prototype.tagInputKeydown = function(tagsCollection, options) {
@@ -66,7 +75,7 @@ jsTag.factory('InputService', ['$filter', function($filter) {
     if ($filter("inArray")(keycode, this.options.breakCodes) !== false) {
       this.breakCodeHitOnEdit(tagsCollection, options);
     }
-  }
+  };
 
   // *** Methods *** //
 
@@ -74,12 +83,12 @@ jsTag.factory('InputService', ['$filter', function($filter) {
     var value = this.input;
     this.input = "";
     return value;
-  }
+  };
 
   // Sets focus on input
   InputService.prototype.focusInput = function() {
     this.isWaitingForInput = true;
-  }
+  };
 
   // breakCodeHit is called when finished creating tag
   InputService.prototype.breakCodeHit = function(tagsCollection, options) {
@@ -102,7 +111,7 @@ jsTag.factory('InputService', ['$filter', function($filter) {
         tagsCollection.addTag(value);
       }
     }
-  }
+  };
 
   // breakCodeHit is called when finished editing tag
   InputService.prototype.breakCodeHitOnEdit = function(tagsCollection, options) {

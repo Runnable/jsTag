@@ -2,7 +2,7 @@
 * jsTag JavaScript Library - Editing tags based on angularJS 
 * Git: https://github.com/eranhirs/jsTag/tree/master
 * License: MIT (http://www.opensource.org/licenses/mit-license.php)
-* Compiled At: 01/17/2015 15:11
+* Compiled At: 04/08/2015 17:17
 **************************************************/
 'use strict';
 var jsTag = angular.module('jsTag', []);
@@ -90,6 +90,7 @@ jsTag.factory('JSTagsCollection', ['JSTag', '$filter', function(JSTag, $filter) 
   
   // Adds a tag with received value
   JSTagsCollection.prototype.addTag = function(value) {
+    if (!value.length) { return; }
     var tagIndex = this.tagsCounter;
     this.tagsCounter++;
   
@@ -296,8 +297,10 @@ jsTag.factory('InputService', ['$filter', function($filter) {
 
       inputService.breakCodeHit(tagsCollection, this.options);
 
-      // Trigger breakcodeHit event allowing extensions (used in twitter's typeahead directive)
-      $element.trigger('jsTag:breakcodeHit');
+      if (typeof $element.trigger === 'function') {
+        // Trigger breakcodeHit event allowing extensions (used in twitter's typeahead directive)
+        $element.trigger('jsTag:breakcodeHit');
+      }
 
       // Do not trigger form submit if value is not empty.
       if (!valueIsEmpty) {
@@ -319,7 +322,14 @@ jsTag.factory('InputService', ['$filter', function($filter) {
           break;
       }
     }
-  }
+  };
+  InputService.prototype.onBlurEdit = function(tagsCollection) {
+    this.breakCodeHitOnEdit(tagsCollection);
+  };
+
+  InputService.prototype.onBlur = function(tagsCollection, options) {
+    this.breakCodeHit(tagsCollection, options);
+  };
 
   // Handles an input of an edited tag keydown
   InputService.prototype.tagInputKeydown = function(tagsCollection, options) {
@@ -330,7 +340,7 @@ jsTag.factory('InputService', ['$filter', function($filter) {
     if ($filter("inArray")(keycode, this.options.breakCodes) !== false) {
       this.breakCodeHitOnEdit(tagsCollection, options);
     }
-  }
+  };
 
   // *** Methods *** //
 
@@ -338,12 +348,12 @@ jsTag.factory('InputService', ['$filter', function($filter) {
     var value = this.input;
     this.input = "";
     return value;
-  }
+  };
 
   // Sets focus on input
   InputService.prototype.focusInput = function() {
     this.isWaitingForInput = true;
-  }
+  };
 
   // breakCodeHit is called when finished creating tag
   InputService.prototype.breakCodeHit = function(tagsCollection, options) {
@@ -366,7 +376,7 @@ jsTag.factory('InputService', ['$filter', function($filter) {
         tagsCollection.addTag(value);
       }
     }
-  }
+  };
 
   // breakCodeHit is called when finished editing tag
   InputService.prototype.breakCodeHitOnEdit = function(tagsCollection, options) {
@@ -552,49 +562,39 @@ jsTag.directive('jsTag', ['$templateCache', function($templateCache) {
   }
 }]);
 
-// TODO: Replace this custom directive by a supported angular-js directive for blur
-jsTag.directive('ngBlur', ['$parse', function($parse) {
-    return {
-        restrict: 'A',
-        link: function(scope, elem, attrs) {
-          // this next line will convert the string
-          // function name into an actual function
-          var functionToCall = $parse(attrs.ngBlur);
-          elem.bind('blur', function(event) {
-          
-            // on the blur event, call my function
-            scope.$apply(function() {
-              functionToCall(scope, {$event:event});
-            });
-          });
-        }
-    };
-}]);
-
-
-// Notice that focus me also sets the value to false when blur is called
-// TODO: Replace this custom directive by a supported angular-js directive for focus
-// http://stackoverflow.com/questions/14833326/how-to-set-focus-in-angularjs
-jsTag.directive('focusMe', ['$parse', '$timeout', function($parse, $timeout) {
+jsTag.directive('onlyDigits', function () {
   return {
     restrict: 'A',
-    link: function(scope, element, attrs) {
-      var model = $parse(attrs.focusMe);
-      scope.$watch(model, function(value) {
-        if (value === true) {
-          $timeout(function() {
-            element[0].focus(); 
-          });
-        }
-      });
-      
-      // to address @blesh's comment, set attribute value to 'false'
-      // on blur event:
-      element.bind('blur', function() {
-        scope.$apply(model.assign(scope, false));
+    require: '?ngModel',
+    link: function (scope, element, attrs, ngModel) {
+      if (!ngModel || attrs.onlyDigits !== 'true') return;
+      ngModel.$parsers.unshift(function (inputValue) {
+        var digits = inputValue.split('').filter(function (s) { return (!isNaN(s) && s != ' '); }).join('');
+        ngModel.$viewValue = digits;
+        ngModel.$render();
+        return digits;
       });
     }
   };
+});
+
+jsTag.directive("limitTo", [function() {
+  return {
+    restrict: "A",
+    require: '?ngModel',
+    link: function(scope, elem, attrs, ngModel) {
+      var limit = parseInt(attrs.limitTo);
+      if (!ngModel) return;
+      ngModel.$parsers.unshift(function (inputValue) {
+        if (inputValue && inputValue.length > limit) {
+          inputValue = inputValue.slice(0, 5);
+        }
+        ngModel.$viewValue = inputValue;
+        ngModel.$render();
+        return inputValue;
+      });
+    }
+  }
 }]);
 
 // focusOnce is used to focus an element once when first appearing
@@ -711,6 +711,9 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "        type=\"text\"\n" +
     "        class=\"jt-tag-edit\"\n" +
     "        focus-once\n" +
+    "        only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "        limit-to=\"{{options.texts.maxInputLength}}\"\n" +
+    "        ng-blur=\"inputService.onBlurEdit(tagsCollection)\"\n" +
     "        ng-model=\"tag.value\"\n" +
     "        data-tag-id=\"{{tag.id}}\"\n" +
     "        ng-keydown=\"inputService.tagInputKeydown(tagsCollection, {$event: $event})\"\n" +
@@ -722,16 +725,21 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "  <input\n" +
     "    class=\"jt-tag-new\"\n" +
     "    type=\"text\"\n" +
-    "    focus-me=\"inputService.isWaitingForInput\"\n" +
+    "    ng-focus=\"inputService.isWaitingForInput\"\n" +
     "    ng-model=\"inputService.input\"\n" +
     "    ng-hide=\"isThereAnEditedTag\"\n" +
+    "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
+    "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "    ng-blur=\"inputService.onBlur(tagsCollection, options, $event)\"\n" +
     "    ng-keydown=\"inputService.onKeydown(inputService, tagsCollection, {$event: $event})\"\n" +
     "    placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
     "    auto-grow\n" +
     "  />\n" +
     "  <input\n" +
     "    class=\"jt-fake-input\"\n" +
-    "    focus-me=\"isThereAnActiveTag\"\n" +
+    "    ng-focus=\"isThereAnActiveTag\"\n" +
+    "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
     "    ng-keydown=\"tagsInputService.onActiveTagKeydown(inputService, {$event: $event})\"\n" +
     "    ng-blur=\"tagsInputService.onActiveTagBlur()\" />\n" +
     "</div>\n"
@@ -761,7 +769,10 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "        type=\"text\"\n" +
     "        class=\"jt-tag-edit\"\n" +
     "        focus-once\n" +
+    "        only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "        limit-to=\"{{options.texts.maxInputLength}}\"\n" +
     "        ng-model=\"tag.value\"\n" +
+    "        ng-blur=\"inputService.onBlurEdit(tagsCollection)\"\n" +
     "        data-tag-id=\"{{tag.id}}\"\n" +
     "        ng-keydown=\"inputService.tagInputKeydown(tagsCollection, {$event: $event})\"\n" +
     "        placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
@@ -774,19 +785,24 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "  <input\n" +
     "    class=\"jt-tag-new\"\n" +
     "    type=\"text\"\n" +
-    "    focus-me=\"inputService.isWaitingForInput\"\n" +
+    "    ng-focus=\"inputService.isWaitingForInput\"\n" +
     "    ng-model=\"inputService.input\"\n" +
     "    ng-hide=\"isThereAnEditedTag\"\n" +
+    "    ng-blur=\"inputService.onBlur(tagsCollection, options, $event)\"\n" +
     "    ng-keydown=\"inputService.onKeydown(inputService, tagsCollection, {$event: $event})\"\n" +
     "    placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
     "    auto-grow\n" +
+    "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
     "    options=\"exampleOptions\" datasets=\"exampleData\"\n" +
     "    sf-typeahead\n" +
     "    js-tag-typeahead\n" +
     "  />\n" +
     "  <input\n" +
     "    class=\"jt-fake-input\"\n" +
-    "    focus-me=\"isThereAnActiveTag\"\n" +
+    "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
+    "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
+    "    ng-focus=\"isThereAnActiveTag\"\n" +
     "    ng-keydown=\"tagsInputService.onActiveTagKeydown(inputService, {$event: $event})\"\n" +
     "    ng-blur=\"tagsInputService.onActiveTagBlur()\" />\n" +
     "</div>\n"

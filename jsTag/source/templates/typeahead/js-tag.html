@@ -21,7 +21,10 @@
         type="text"
         class="jt-tag-edit"
         focus-once
+        only-digits="{{options.texts.onlyDigits}}"
+        limit-to="{{options.texts.maxInputLength}}"
         ng-model="tag.value"
+        ng-blur="inputService.onBlurEdit(tagsCollection)"
         data-tag-id="{{tag.id}}"
         ng-keydown="inputService.tagInputKeydown(tagsCollection, {$event: $event})"
         placeholder="{{options.texts.inputPlaceHolder}}"
@@ -34,19 +37,24 @@
   <input
     class="jt-tag-new"
     type="text"
-    focus-me="inputService.isWaitingForInput"
+    ng-focus="inputService.isWaitingForInput"
     ng-model="inputService.input"
     ng-hide="isThereAnEditedTag"
+    ng-blur="inputService.onBlur(tagsCollection, options, $event)"
     ng-keydown="inputService.onKeydown(inputService, tagsCollection, {$event: $event})"
     placeholder="{{options.texts.inputPlaceHolder}}"
     auto-grow
+    only-digits="{{options.texts.onlyDigits}}"
+    limit-to="{{options.texts.maxInputLength}}"
     options="exampleOptions" datasets="exampleData"
     sf-typeahead
     js-tag-typeahead
   />
   <input
     class="jt-fake-input"
-    focus-me="isThereAnActiveTag"
+    only-digits="{{options.texts.onlyDigits}}"
+    limit-to="{{options.texts.maxInputLength}}"
+    ng-focus="isThereAnActiveTag"
     ng-keydown="tagsInputService.onActiveTagKeydown(inputService, {$event: $event})"
     ng-blur="tagsInputService.onActiveTagBlur()" />
 </div>
