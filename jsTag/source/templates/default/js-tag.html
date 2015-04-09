@@ -35,7 +35,7 @@
   <input
     class="jt-tag-new"
     type="text"
-    ng-focus="inputService.isWaitingForInput"
+    focus-me="inputService.isWaitingForInput"
     ng-model="inputService.input"
     ng-hide="isThereAnEditedTag"
     limit-to="{{options.texts.maxInputLength}}"
@@ -47,7 +47,7 @@
   />
   <input
     class="jt-fake-input"
-    ng-focus="isThereAnActiveTag"
+    focus-me="isThereAnActiveTag"
     only-digits="{{options.texts.onlyDigits}}"
     limit-to="{{options.texts.maxInputLength}}"
     ng-keydown="tagsInputService.onActiveTagKeydown(inputService, {$event: $event})"

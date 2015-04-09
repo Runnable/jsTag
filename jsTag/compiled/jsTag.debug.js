@@ -2,7 +2,7 @@
 * jsTag JavaScript Library - Editing tags based on angularJS 
 * Git: https://github.com/eranhirs/jsTag/tree/master
 * License: MIT (http://www.opensource.org/licenses/mit-license.php)
-* Compiled At: 04/08/2015 17:17
+* Compiled At: 04/09/2015 11:53
 **************************************************/
 'use strict';
 var jsTag = angular.module('jsTag', []);
@@ -597,6 +597,32 @@ jsTag.directive("limitTo", [function() {
   }
 }]);
 
+
+// Notice that focus me also sets the value to false when blur is called
+// TODO: Replace this custom directive by a supported angular-js directive for focus
+// http://stackoverflow.com/questions/14833326/how-to-set-focus-in-angularjs
+jsTag.directive('focusMe', ['$parse', '$timeout', function($parse, $timeout) {
+  return {
+    restrict: 'A',
+    link: function(scope, element, attrs) {
+      var model = $parse(attrs.focusMe);
+      scope.$watch(model, function(value) {
+        if (value === true) {
+          $timeout(function() {
+            element[0].focus();
+          });
+        }
+      });
+
+      // to address @blesh's comment, set attribute value to 'false'
+      // on blur event:
+      element.bind('blur', function() {
+        scope.$apply(model.assign(scope, false));
+      });
+    }
+  };
+}]);
+
 // focusOnce is used to focus an element once when first appearing
 // Not like focusMe that binds to an input boolean and keeps focusing by it
 jsTag.directive('focusOnce', ['$timeout', function($timeout) {
@@ -725,7 +751,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "  <input\n" +
     "    class=\"jt-tag-new\"\n" +
     "    type=\"text\"\n" +
-    "    ng-focus=\"inputService.isWaitingForInput\"\n" +
+    "    focus-me=\"inputService.isWaitingForInput\"\n" +
     "    ng-model=\"inputService.input\"\n" +
     "    ng-hide=\"isThereAnEditedTag\"\n" +
     "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
@@ -737,7 +763,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "  />\n" +
     "  <input\n" +
     "    class=\"jt-fake-input\"\n" +
-    "    ng-focus=\"isThereAnActiveTag\"\n" +
+    "    focus-me=\"isThereAnActiveTag\"\n" +
     "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
     "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
     "    ng-keydown=\"tagsInputService.onActiveTagKeydown(inputService, {$event: $event})\"\n" +
@@ -785,7 +811,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "  <input\n" +
     "    class=\"jt-tag-new\"\n" +
     "    type=\"text\"\n" +
-    "    ng-focus=\"inputService.isWaitingForInput\"\n" +
+    "    focus-me=\"inputService.isWaitingForInput\"\n" +
     "    ng-model=\"inputService.input\"\n" +
     "    ng-hide=\"isThereAnEditedTag\"\n" +
     "    ng-blur=\"inputService.onBlur(tagsCollection, options, $event)\"\n" +
@@ -802,7 +828,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "    class=\"jt-fake-input\"\n" +
     "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
     "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
-    "    ng-focus=\"isThereAnActiveTag\"\n" +
+    "    focus-me=\"isThereAnActiveTag\"\n" +
     "    ng-keydown=\"tagsInputService.onActiveTagKeydown(inputService, {$event: $event})\"\n" +
     "    ng-blur=\"tagsInputService.onActiveTagBlur()\" />\n" +
     "</div>\n"

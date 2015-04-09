@@ -48,6 +48,32 @@ jsTag.directive("limitTo", [function() {
   }
 }]);
 
+
+// Notice that focus me also sets the value to false when blur is called
+// TODO: Replace this custom directive by a supported angular-js directive for focus
+// http://stackoverflow.com/questions/14833326/how-to-set-focus-in-angularjs
+jsTag.directive('focusMe', ['$parse', '$timeout', function($parse, $timeout) {
+  return {
+    restrict: 'A',
+    link: function(scope, element, attrs) {
+      var model = $parse(attrs.focusMe);
+      scope.$watch(model, function(value) {
+        if (value === true) {
+          $timeout(function() {
+            element[0].focus();
+          });
+        }
+      });
+
+      // to address @blesh's comment, set attribute value to 'false'
+      // on blur event:
+      element.bind('blur', function() {
+        scope.$apply(model.assign(scope, false));
+      });
+    }
+  };
+}]);
+
 // focusOnce is used to focus an element once when first appearing
 // Not like focusMe that binds to an input boolean and keeps focusing by it
 jsTag.directive('focusOnce', ['$timeout', function($timeout) {
