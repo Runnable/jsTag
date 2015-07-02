@@ -28,7 +28,7 @@
         data-tag-id="{{tag.id}}"
         ng-keydown="inputService.tagInputKeydown(tagsCollection, {$event: $event})"
         placeholder="{{options.texts.inputPlaceHolder}}"
-        auto-grow
+        auto-grow="{{options.minTagWidth}}"
         />
     </span>
   </span>
@@ -43,7 +43,7 @@
     ng-blur="inputService.onBlur(tagsCollection, options, $event)"
     ng-keydown="inputService.onKeydown(inputService, tagsCollection, {$event: $event})"
     placeholder="{{options.texts.inputPlaceHolder}}"
-    auto-grow
+    auto-grow="{{options.minTagWidth}}"
   />
   <input
     class="jt-fake-input"
