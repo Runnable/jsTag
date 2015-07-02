@@ -29,16 +29,16 @@ jsTag.directive('onlyDigits', function () {
   };
 });
 
-jsTag.directive("limitTo", [function() {
+jsTag.directive("limitTo", ['$parse', function($parse) {
   return {
     restrict: "A",
     require: '?ngModel',
     link: function(scope, elem, attrs, ngModel) {
-      var limit = parseInt(attrs.limitTo);
+      var limit = $parse(attrs.limitTo);
       if (!ngModel) return;
       ngModel.$parsers.unshift(function (inputValue) {
         if (inputValue && inputValue.length > limit) {
-          inputValue = inputValue.slice(0, 5);
+          inputValue = inputValue.slice(0, limit);
         }
         ngModel.$viewValue = inputValue;
         ngModel.$render();
@@ -88,13 +88,13 @@ jsTag.directive('focusOnce', ['$timeout', function($timeout) {
 }]);
 
 // auto-grow directive by the "shadow" tag concept
-jsTag.directive('autoGrow', ['$timeout', function($timeout) {
+jsTag.directive('autoGrow', ['$timeout', '$parse', function($timeout, $parse) {
   return {
-    link: function(scope, element, attr){
+    link: function(scope, element, attrs){
       var paddingLeft = element.css('paddingLeft'),
           paddingRight = element.css('paddingRight');
    
-      var minWidth = 60;
+      var minWidth = $parse(attrs.autoGrow) || 0;
    
       var $shadow = angular.element('<span></span>').css({
         'position': 'absolute',

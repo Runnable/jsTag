@@ -2,7 +2,7 @@
 * jsTag JavaScript Library - Editing tags based on angularJS 
 * Git: https://github.com/eranhirs/jsTag/tree/master
 * License: MIT (http://www.opensource.org/licenses/mit-license.php)
-* Compiled At: 07/02/2015 14:08
+* Compiled At: 07/02/2015 15:37
 **************************************************/
 'use strict';
 var jsTag = angular.module('jsTag', []);
@@ -578,16 +578,16 @@ jsTag.directive('onlyDigits', function () {
   };
 });
 
-jsTag.directive("limitTo", [function() {
+jsTag.directive("limitTo", ['$parse', function($parse) {
   return {
     restrict: "A",
     require: '?ngModel',
     link: function(scope, elem, attrs, ngModel) {
-      var limit = parseInt(attrs.limitTo);
+      var limit = $parse(attrs.limitTo);
       if (!ngModel) return;
       ngModel.$parsers.unshift(function (inputValue) {
         if (inputValue && inputValue.length > limit) {
-          inputValue = inputValue.slice(0, 5);
+          inputValue = inputValue.slice(0, limit);
         }
         ngModel.$viewValue = inputValue;
         ngModel.$render();
@@ -637,13 +637,13 @@ jsTag.directive('focusOnce', ['$timeout', function($timeout) {
 }]);
 
 // auto-grow directive by the "shadow" tag concept
-jsTag.directive('autoGrow', ['$timeout', function($timeout) {
+jsTag.directive('autoGrow', ['$timeout', '$parse', function($timeout, $parse) {
   return {
-    link: function(scope, element, attr){
+    link: function(scope, element, attrs){
       var paddingLeft = element.css('paddingLeft'),
           paddingRight = element.css('paddingRight');
    
-      var minWidth = 60;
+      var minWidth = $parse(attrs.autoGrow) || 0;
    
       var $shadow = angular.element('<span></span>').css({
         'position': 'absolute',
@@ -744,7 +744,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "        data-tag-id=\"{{tag.id}}\"\n" +
     "        ng-keydown=\"inputService.tagInputKeydown(tagsCollection, {$event: $event})\"\n" +
     "        placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
-    "        auto-grow\n" +
+    "        auto-grow=\"{{options.minTagWidth}}\"\n" +
     "        />\n" +
     "    </span>\n" +
     "  </span>\n" +
@@ -759,7 +759,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "    ng-blur=\"inputService.onBlur(tagsCollection, options, $event)\"\n" +
     "    ng-keydown=\"inputService.onKeydown(inputService, tagsCollection, {$event: $event})\"\n" +
     "    placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
-    "    auto-grow\n" +
+    "    auto-grow=\"{{options.minTagWidth}}\"\n" +
     "  />\n" +
     "  <input\n" +
     "    class=\"jt-fake-input\"\n" +
@@ -802,7 +802,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "        data-tag-id=\"{{tag.id}}\"\n" +
     "        ng-keydown=\"inputService.tagInputKeydown(tagsCollection, {$event: $event})\"\n" +
     "        placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
-    "        auto-grow\n" +
+    "        auto-grow=\"{{options.minTagWidth}}\"\n" +
     "        options=\"exampleOptions\" datasets=\"exampleData\"\n" +
     "        sf-typeahead\n" +
     "        />\n" +
@@ -817,7 +817,7 @@ angular.module("jsTag").run(["$templateCache", function($templateCache) {
     "    ng-blur=\"inputService.onBlur(tagsCollection, options, $event)\"\n" +
     "    ng-keydown=\"inputService.onKeydown(inputService, tagsCollection, {$event: $event})\"\n" +
     "    placeholder=\"{{options.texts.inputPlaceHolder}}\"\n" +
-    "    auto-grow\n" +
+    "    auto-grow=\"{{options.minTagWidth}}\"\n" +
     "    only-digits=\"{{options.texts.onlyDigits}}\"\n" +
     "    limit-to=\"{{options.texts.maxInputLength}}\"\n" +
     "    options=\"exampleOptions\" datasets=\"exampleData\"\n" +
